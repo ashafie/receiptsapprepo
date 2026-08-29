@@ -58,6 +58,16 @@ def format_reply(parsed: dict) -> str:
 def health():
     return "ok"
 
+@app.route("/cron/dedupe", methods=["GET"])
+def cron_dedupe():
+    try:
+        from sheets_client import deduplicate_sheet
+        removed = deduplicate_sheet()
+        return jsonify({"ok": True, "removed": removed})
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
 
 @app.route("/webhook/<secret>", methods=["POST"])
 def webhook(secret):
@@ -93,6 +103,28 @@ def webhook(secret):
                 chat_id,
                 "Sorry, I couldn't process that receipt. Please try a clearer photo.",
             )
+        return jsonify({"ok": True})
+
+    if "document" in message:
+        doc = message["document"]
+        try:
+            file_id = doc["file_id"]
+            file_bytes = download_telegram_file(BOT_TOKEN, file_id)
+            text_content = file_bytes.decode('utf-8', errors='ignore')
+            
+            send_message(chat_id, f"📄 Received document. Extracting transactions via Gemini, please wait...")
+            from sms_parser import parse_sms_bulk
+            transactions = parse_sms_bulk(text_content)
+            
+            if not transactions:
+                send_message(chat_id, "⚠️ Could not extract any valid transactions from the file.")
+            else:
+                for tx in transactions:
+                    append_expense(sender_name + " (SMS Bulk)", tx)
+                send_message(chat_id, f"✅ Successfully extracted and logged {len(transactions)} transactions to the Google Sheet!")
+        except Exception as e:
+            traceback.print_exc()
+            send_message(chat_id, f"❌ Failed to process document: {str(e)}")
         return jsonify({"ok": True})
 
     text_body = message.get("text", "")
