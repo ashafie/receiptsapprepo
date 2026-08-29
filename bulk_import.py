@@ -1,11 +1,13 @@
-﻿import os
+import os
 import shutil
+import time
 from pathlib import Path
-from ocr import parse_receipt
-from sheets_client import append_expense
 from dotenv import load_dotenv
 
 load_dotenv()
+
+from ocr import parse_receipt
+from sheets_client import append_expense
 
 INPUT_DIR = 'bulk_photos'
 PROCESSED_DIR = 'bulk_photos/processed'
@@ -31,10 +33,10 @@ def main():
             files_to_process.append(file_path)
 
     if not files_to_process:
-        print(f'📭 No images found in {INPUT_DIR}/. Place your photos there and run again.')
+        print(f'[Empty] No images found in {INPUT_DIR}/. Place your photos there and run again.')
         return
 
-    print(f'📸 Found {len(files_to_process)} photos to process. Starting bulk import...\n')
+    print(f'[Start] Found {len(files_to_process)} photos to process. Starting bulk import...\n')
 
     success_count = 0
     for idx, file_path in enumerate(files_to_process, 1):
@@ -51,13 +53,16 @@ def main():
             
             total = parsed.get('total')
             merchant = parsed.get('merchant') or 'Unknown'
-            print(f'   ✅ Logged: {merchant} | Total: {total}')
+            print(f'   [OK] Logged: {merchant} | Total: {total}')
             success_count += 1
             
         except Exception as e:
-            print(f'   ❌ Failed to process {filename}: {e}')
+            print(f'   [ERROR] Failed to process {filename}: {e}')
+            
+        # Rate limit protection for Gemini Free Tier (15 requests / minute)
+        time.sleep(4.5)
 
-    print(f'\n🎉 Bulk import complete! Successfully logged {success_count}/{len(files_to_process)} receipts.')
+    print(f'\n[Done] Bulk import complete! Successfully logged {success_count}/{len(files_to_process)} receipts.')
 
 if __name__ == '__main__':
     main()
