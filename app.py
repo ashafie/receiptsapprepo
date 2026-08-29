@@ -96,11 +96,23 @@ def webhook(secret):
         return jsonify({"ok": True})
 
     text_body = message.get("text", "")
-    if text_body.startswith("/start") or text_body.startswith("/help"):
+    if text_body.startswith("/analyze"):
+        query = text_body[len("/analyze"):].strip()
+        send_message(chat_id, "📊 Analyzing your expenses, please wait...")
+        try:
+            from analytics import perform_analysis
+            result_text = perform_analysis(query)
+            send_message(chat_id, result_text)
+        except Exception as e:
+            traceback.print_exc()
+            send_message(chat_id, f"❌ Failed to analyze: {str(e)}")
+            
+    elif text_body.startswith("/start") or text_body.startswith("/help"):
         send_message(
             chat_id,
             "Send me a photo of a receipt and I'll extract the merchant, date, "
-            "and total, then log it to the family expenses sheet.",
+            "and total, then log it to the family expenses sheet.\n\n"
+            "You can also use `/analyze` to get spending insights, or send a .txt file with bank SMS messages for bulk import!"
         )
 
     return jsonify({"ok": True})

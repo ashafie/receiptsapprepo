@@ -7,3 +7,5 @@ gunicorn==22.0.0
 google-genai>=0.2.0
 
 python-dotenv==1.0.1
+
+pandas==2.2.2
