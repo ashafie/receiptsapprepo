@@ -4,7 +4,7 @@ import traceback
 import requests
 from flask import Flask, request, jsonify
 
-from ocr import download_telegram_file, extract_text, parse_receipt
+from ocr import download_telegram_file, parse_receipt
 from sheets_client import append_expense
 
 app = Flask(__name__)
@@ -83,8 +83,7 @@ def webhook(secret):
             # Telegram sends multiple resolutions; the last is the largest.
             file_id = message["photo"][-1]["file_id"]
             image_bytes = download_telegram_file(BOT_TOKEN, file_id)
-            text = extract_text(image_bytes)
-            parsed = parse_receipt(text)
+            parsed = parse_receipt(image_bytes)
             print(f"[OCR] sender={sender_name} parsed={parsed}", flush=True)
             append_expense(sender_name, parsed)
             send_message(chat_id, format_reply(parsed))
