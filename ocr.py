@@ -52,7 +52,7 @@ def parse_receipt(image_bytes: bytes) -> dict:
     
     # We pass the raw image bytes to Gemini
     response = client.models.generate_content(
-        model='gemini-2.0-flash',
+        model='gemini-3.6-flash',
         contents=[
             types.Part.from_bytes(
                 data=image_bytes,
